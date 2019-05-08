@@ -1,0 +1,19 @@
+{
+  "name": "react-hoox",
+  "version": "0.0.1",
+  "description": "React Hook to observe any plain object changes and re-render related component",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruslan-akibov/react-hoox.git"
+  },
+  "keywords": [
+    "react",
+    "hook",
+    "observe",
+    "object",
+    "changes"
+  ],
+  "author": "RA",
+  "license": "ISC"
+}
