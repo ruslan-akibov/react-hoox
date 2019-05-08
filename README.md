@@ -1,6 +1,6 @@
 # React-Hoox
 
-A hook [React](https://reactjs.org/docs/hooks-intro.html) and more
+React [Hook](https://reactjs.org/docs/hooks-intro.html) to observe any plain object changes and re-render related component.
 
 ## Install
 
