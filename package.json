@@ -1,6 +1,6 @@
 {
   "name": "react-hoox",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Hook to observe any Object and update related Component on real changes",
   "main": "index.js",
   "repository": {
