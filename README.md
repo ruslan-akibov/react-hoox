@@ -71,6 +71,8 @@ You can introduce custom patterns based on `react-hoox` as well, using higher-or
 ```js
 import use$ from 'react-hoox';
 
+// standalone usage - the function has a different signature
+// callback will be executed on 'anyObject' changes
 const unsubscribe = use$(anyObject, obj => { ... });
 ```
 
