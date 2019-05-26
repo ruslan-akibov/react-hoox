@@ -195,7 +195,7 @@ function runAsModule() {
     }
 
     // entry point: a hook, will observe provided 'source' and re-render component on changes
-    return function(source) {
+    return function(source, customCallback) {
         var tStart = performance.now();
 
         var invokeRender = null;
@@ -204,9 +204,13 @@ function runAsModule() {
             invokeRender = _React.useState({})[1];
         } catch (error) {}
 
-        if (!invokeRender) {
-            return source; // not a hook
+        var runOnChanges = invokeRender || (customCallback ? function() { customCallback(source) } : null);
+        var returnValue = source;
+
+        if (!runOnChanges) { // not a hook, no callback - do nothing
+            return returnValue;
         }
+
 
         // run instrumental listener, if not running
         if (canSwitchOn && !window[FLAG_NAME]) {
@@ -225,29 +229,15 @@ function runAsModule() {
             sourceObjects.push(source);
         }
 
-        // attach current component render listener
-        // todo: research is it possible "React render component/hook, but do not raise Effect" because of something
-        if (descriptor.listeners.indexOf(invokeRender) < 0) {
-            descriptor.listeners.push(invokeRender);
-        }
-
-        // https://reactjs.org/docs/hooks-reference.html#useeffect
-        // Although useEffect is deferred until after the browser has painted, it’s guaranteed to fire before any new renders.
-        // React will always flush a previous render’s effects before starting a new update.
-
-        // https://reactjs.org/docs/hooks-reference.html#uselayouteffect
-        // Updates scheduled inside useLayoutEffect will be flushed synchronously
-        _React.useLayoutEffect(function() {
+        function effectHandler() {
             // React makes render -> clear effect -> use effect, so we should re-check here
-            if (descriptor.listeners.indexOf(invokeRender) < 0) {
-                descriptor.listeners.push(invokeRender);
+            if (descriptor.listeners.indexOf(runOnChanges) < 0) {
+                descriptor.listeners.push(runOnChanges);
             }
-
-            // todo: research case 'data in state A -> (x) ->  data to state B -> invoke render -> data to state A -> (x)'
 
             return function() {
                 // remove listener
-                descriptor.listeners = descriptor.listeners.filter(function(f) { return f !==  invokeRender });
+                descriptor.listeners = descriptor.listeners.filter(function(f) { return f !==  runOnChanges });
 
                 window.setTimeout(function() {
                     // garbage collector - remove object at all if no more listeners appears
@@ -257,11 +247,33 @@ function runAsModule() {
                     }
                 }, 500);
             };
-        });
+        }
+
+
+        if (invokeRender) { // run as a hook
+            // attach current component render listener before Effect, to catch changes between render and painting
+            // todo: research is it possible "React render component/hook, but do not raise Effect" because of something
+            if (descriptor.listeners.indexOf(runOnChanges) < 0) {
+                descriptor.listeners.push(runOnChanges);
+            }
+
+            // https://reactjs.org/docs/hooks-reference.html#useeffect
+            // Although useEffect is deferred until after the browser has painted, it’s guaranteed to fire before any new renders.
+            // React will always flush a previous render’s effects before starting a new update.
+            _React.useEffect(effectHandler);
+        } else if (customCallback) { // run outside React
+            returnValue = effectHandler();
+        }
+
+        // https://reactjs.org/docs/hooks-reference.html#uselayouteffect
+        // Updates scheduled inside useLayoutEffect will be flushed synchronously
+
+        // todo: research case 'data in state A -> (x) ->  data to state B -> invoke render -> data to state A -> (x)'
+        //_React.useLayoutEffect(function() { });
 
         var tEnd = performance.now();
         timeUsed += tEnd - tStart;
 
-        return source;
+        return returnValue;
     }
 }
