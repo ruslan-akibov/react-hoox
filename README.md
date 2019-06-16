@@ -1,11 +1,11 @@
 # react-hoox
 
-Hook to observe any *Object* and update related *Component* on real changes.
+A simple hook to observe any *Object* and update related *Component* when real change happens.
 
-Try it in the [sandbox](https://codesandbox.io/s/b55w2)
+[Sandbox Demo](https://codesandbox.io/s/b55w2)
 
 
-## Install
+## Installation
 
 ```
 npm install --save react-hoox
@@ -14,9 +14,9 @@ npm install --save react-hoox
 React **16.8.0** or later should be available as `react` package or provided as `React` variable.
 
 
-## Prepare
+## Preparation
 
-Put in "plugins" of your `.babelrc` or define as `babel` plugin another way.
+Add the following in "plugins" of your `.babelrc` or define as `babel` plugin any other way.
 
 ```js
 {
@@ -29,25 +29,24 @@ Put in "plugins" of your `.babelrc` or define as `babel` plugin another way.
 ```
 
 
-## Use
+## Usage
 
-Just one function. Will return provided *Object* (for destructuring purposes). Any naming could be chosen, `use` or `use$` seems very nice ones.
+Using hoox means calling only one function. It returns provided *Object* (for destructuring purposes). You can name it any way you want, for example, `use` or `use$` seem to be quite appropriate.
 
 ```js
 import use from 'react-hoox';
 
 function AnyComponent() {
-    // not matter where anyObject was taken from:
+    // it does not matter where anyObject comes from:
     // import, props, local variable, ...
     use(anyObject);
     ...
 }
 ```
 
-That's it. Now you can asynchronously mutate 'anyObject' or its parts as long as you prefer. 
-'AnyComponent' will be updated each time 'anyObject' **really** changes (from human or `JSON.stringify` point of view)
+That's it. Now you can asynchronously mutate 'anyObject' and 'AnyComponent' will be updated every time 'anyObject' **really** changes (from human or `JSON.stringify` point of view)
 
-Transparent way to *connect* class-components (if you like such things):
+A simple way to *connect* class-components (if you like such things):
 
 ```js
 function MyConnectedComponent(props) {
@@ -66,42 +65,44 @@ function MyConnectedComponent(props) {
 }
 ```
 
-You can introduce custom patterns based on `react-hoox` as well, using higher-order functions/components or custom changes handler:
+You can also introduce custom patterns based on `react-hoox` using higher-order functions/components or custom changes handler:
 
 ```js
 import use$ from 'react-hoox';
 
-// standalone usage - the function has a different signature
-// callback will be executed on 'anyObject' changes
+// standalone usage - the function has different signature
+// callback will be executed when 'anyObject' changes
 const unsubscribe = use$(anyObject, obj => { ... });
 ```
 
 
 ## Why so serious?
 
-Do you agree that you should think, and a computer should count?
+Do you agree that you should think and a computer should calculate?
 
-Do you agree that a computer can take on a significant painful part of our work? And do it much better and without issues?
+Do you agree that a computer can do a significant painful part of our work? And do it much better and without issues?
 
-If so, then `react-hoox` will try to help you produce much cleaner and more stable code, and with it you will get:
+If so, then `react-hoox` is for you! It will help you write cleaner and more stable code.
 
-* No any kind of boilerplate. Just small *markers* in the code, which means "this code depends on this data" (*declarative* interpretation)
+Advantages of using `react-hoox`:
 
-* No any kind of wrappers/dispatchers/managers and so on. Everything required is written locally in one place of your code, like "start observing this and update me on changes" (*imperative* interpretation)
+* No boilerplate. Just small *markers* in the code that mean "this code depends on this data" (*declarative* interpretation)
 
-* No any kind of immutability, `react-hoox` will take care of this. You will receive a stream of *new* data states (*reactive* interpretation)
+* No wrappers/dispatchers/managers and so on. Everything you need is written locally in one place like "start observing this and update me on changes" (*imperative* interpretation)
 
-Eventually, you could replace `react-hoox` with another implementation of the similar functionality (using `set`/`get`, or `Proxy`, or `Object.observe`, or whatever, with or without limitations), but keep your code unchanged.
-All required will be implemented in one function, if you will follow this way.
+* No immutability, `react-hoox` will take care of that. You will receive a stream of *new* data states (*reactive* interpretation)
+
+Eventually, you will be able to replace `react-hoox` with another implementation of similar functionality (using `set`/`get`, or `Proxy`, or `Object.observe`, or whatever, with or without limitations) and keep your code unchanged.
+Everything you need will be done by one function.
 
 
 ## Disclaimer
 
 `react-hoox` will affect overall application performance since it uses some CPU and RAM, you will see real-time usage notifications in the console.
 
-The bad news is that it depends on the amount of observable (simultaneously) data, and on the browser/device.
+The bad news is that it depends on the amount of (simultaneously) observable data and on the browser/device.
 
-The good news is that for typical applications and modern devices, the calculations most likely will takes *one-digit milliseconds* per second, when another code works (1% or less), and several dozens Kb for caching. See detailed notifications about your case.
+The good news is that for typical applications and modern devices the calculations will most likely take *one-digit milliseconds* per second when another code works (1% or less) and several dozens Kb for caching. See detailed notifications in the console for your situation.
 
-Sure, detailed explanation of how this works and why resources are used will be provided. But later. For now, please use sources.
-Moreover, if you are going to use `react-hoox` in serious production, you *should* do it. 
+Detailed explanation of how this works and why resources are consumed will be provided in the future. For now the source code is your best friend.
+Moreover, if you're thinking about using `react-hoox` in a serious production, you *should* definitely do it. 
