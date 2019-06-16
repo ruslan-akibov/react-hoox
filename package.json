@@ -1,7 +1,7 @@
 {
   "name": "react-hoox",
-  "version": "0.0.4",
-  "description": "Hook to observe any Object and update related Component on real changes",
+  "version": "0.1.0",
+  "description": "A simple hook to observe any Object, including subtree, and update related Component when real change happens",
   "main": "index.js",
   "repository": {
     "type": "git",

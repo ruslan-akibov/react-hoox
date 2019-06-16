@@ -1,10 +1,23 @@
 // old syntax, guys. hope nobody minds
 Object.defineProperty(exports, "__esModule", { value: true });
+var isDevMode;
+try {
+    isDevMode = (process.env.NODE_ENV === 'development');
+} catch (error) {}
+
+var resolvedPromise = (typeof Promise !== 'undefined' && Promise.resolve) ? Promise.resolve() : undefined;
+
+// unique ids to use in code instrumenting
 var FLAG_NAME = '__r_a_17_';
 var TRIGGER_NAME = '__r_a_27_';
 
-var TIME_LIMIT = 50;
+// humans can't see 25th frame in the cinema.
+// --- R --- 40ms --- (R) --- 40ms --- R --
+// so it is better to use for calculations not more than 40ms/second
+var TIME_LIMIT_FREE = 32;   // ~2 frames on 60Hz
+var TIME_LIMIT = 64;
 
+// care about user - the same naming 'react-hoox' for plugin and for import
 exports.default = typeof window !== 'undefined' ? runAsModule() : runAsPlugin();
 
 function runAsPlugin() {
@@ -12,7 +25,7 @@ function runAsPlugin() {
         var t = args.types;
 
         // code 'if (window.__r_a_17_) window.__r_a_27_();'
-        // todo: 'if (winodw.__r_a_17_ === true) ...' or even 'window.__r_a_17_ === true && window.__r_a_27_();'
+        // todo: try 'window.__r_a_17_ === true && window.__r_a_27_();'
         var injection = t.IfStatement(
             t.memberExpression(
                 t.identifier('window'), t.identifier(FLAG_NAME)
@@ -27,10 +40,11 @@ function runAsPlugin() {
             )
         );
 
+        var skippingFiles = {};
+
         // insert 'injection' on top of any function declaration
         function functionInstrumenter(path) {
-            // todo: options 'include' and 'exclude' - string regexp in json
-            if (this.file.opts.filename.indexOf('node_modules') >= 0) return;
+            if (skippingFiles[this.file.opts.filename]) return;
 
             var body = path.get('body');
 
@@ -67,7 +81,35 @@ function runAsPlugin() {
 
         return {
             visitor: {
-                // includes any functions, class methods, arrows, etc...
+                Program: function(path) {
+                    var filename = this.file.opts.filename;
+
+                    // skip all modules
+                    if (filename.indexOf('node_modules') >= 0) {
+                        skippingFiles[filename] = true;
+                        return;
+                    }
+
+                    var body = path.node.body;
+                    if (!body) return;
+
+                    // find comments on top of the file
+                    var firstChild = body[0] ? body[0] : body;
+                    var comments = firstChild.leadingComments;
+                    if (!comments) return;
+
+                    for (var i = 0; i < comments.length; i++) {
+                        var value = (comments[i].value || '').toLowerCase();
+
+                        // skip files with comment 'react-hoox: disabled' or same on top
+                        if (value.indexOf('hoox') >= 0 && value.indexOf('disable') >= 0) {
+                            skippingFiles[filename] = true;
+                            return;
+                        }
+                    }
+                },
+
+                // 'Function' includes any functions, class methods, arrows, etc...
                 Function: functionInstrumenter
 
                 // AwaitExpression, YieldExpression --> ([(await/yield ...), window.__r_a_17_ ? window.__r_a_27_() : 0][0])
@@ -79,6 +121,13 @@ function runAsPlugin() {
 
 function runAsModule() {
     var _React = typeof React !== 'undefined' ? React : require('react');
+
+    var unstable_batchedUpdates;    // batching will be default in future (17.x was found)
+    try {
+        var _ReactDOM = typeof ReactDOM !== 'undefined' ? ReactDOM : require('react-dom');
+        unstable_batchedUpdates = _ReactDOM.unstable_batchedUpdates;
+    } catch (error) {}
+
 
     var sources = new WeakMap();
     var sourceObjects = [];
@@ -99,29 +148,47 @@ function runAsModule() {
         window[FLAG_NAME] = false;   // don't listen (and even call) next triggers until we finish (kind of Throttle)
         canSwitchOn = false;         // can't switch on until we finish
 
+        var postponedChecking = function() {
+            checkUpdates();
+
+            window[FLAG_NAME] = !!sourceObjects.length;  // run instrumental listener again, if there is observers
+            canSwitchOn = true;                          // or just allow to start it later
+        }
+
+
         if (!perfTimer) {
             // refresh aggregated 'resource usage' each second
             perfStartTime = performance.now();
             perfTimer = window.setTimeout(function() {
+                var t = Math.round(timeUsed * 100) / 100;   // formatting 0.00
+
+                // start next tick from beginning
+                timeUsed = 0;
                 perfTimer = null;
 
                 // real-time 'resource usage' logging
-                var t = Math.round(timeUsed * 100) / 100;
-                console.log('react-hoox: ' + t + 'ms (' + Math.round(t) / 10 + '% vCPU, ' + Math.round(memoryUsed / 1024) + 'Kb RAM)');
-
-                timeUsed = 0;
+                if (isDevMode) {
+                    console.log(
+                        ((t > TIME_LIMIT_FREE) ? '[!] ' : '') + 'react-hoox: ' + t + 'ms (' +
+                            Math.round(t) / 10 + '% vCPU, ' + Math.round(memoryUsed / 1024) + 'Kb RAM' +
+                        ')'
+                    );
+                }
             }, 1000);
         }
 
         // delay before next calculation according to current resources usage, but not less then twice per second
         var delay = Math.max(0, Math.min(500, 1000 * (timeUsed/TIME_LIMIT) - (performance.now() - perfStartTime) ));
 
-        window.setTimeout(function() {
-            checkUpdates();
-
-            window[FLAG_NAME] = !!sourceObjects.length;  // run instrumental listener again, if there is observers
-            canSwitchOn = true;                          // or just allow to start it later
-        }, delay);
+        if (timeUsed < TIME_LIMIT_FREE || delay < 40) {   // a lot of resources / small delays
+            if (resolvedPromise) {
+                resolvedPromise.then(postponedChecking);
+            } else {
+                window.setTimeout(postponedChecking, 0);
+            }
+        } else {
+            window.setTimeout(postponedChecking, delay);
+        }
     }
 
     // stringify observing objects and check for changes
@@ -135,11 +202,7 @@ function runAsModule() {
             var descriptor = sources.get(o);
 
             // calculating new hash-code
-            var hashCode = stringify(
-                (typeof o.__observables === 'function')
-                    ? o.__observables(o)
-                    : (o.__observables || o)
-            );
+            var hashCode = stringify(o);
 
             if (hashCode !== descriptor.hashCode) {
                 Array.prototype.push.apply(listenersToRender, descriptor.listeners);
@@ -150,12 +213,22 @@ function runAsModule() {
             memoryUsed += 2 * descriptor.hashCode.length;
         });
 
+        // run 'invokeRender' for each related component if changes
+        function updateListeners() {
+            listenersToRender.forEach(function(f) { f({}) });
+        }
+
         var tEnd = performance.now();
         timeUsed += tEnd - tStart;
 
-        // run 'invokeRender' for each related component if changes
-        listenersToRender.forEach(function(f) { f({}) });
+        // this API will not be available soon
+        if (unstable_batchedUpdates) {
+            unstable_batchedUpdates(updateListeners);
+        } else {
+            updateListeners();
+        }
     }
+
 
     // stringify - calculates 'hashCode' of provided object (JSON.stringify-like, but with circular links)
     var objectCheck = Object.prototype.toString;
@@ -193,6 +266,7 @@ function runAsModule() {
 
         return result.join('');
     }
+
 
     // entry point: a hook, will observe provided 'source' and re-render component on changes
     return function(source, customCallback) {
@@ -252,7 +326,6 @@ function runAsModule() {
 
         if (invokeRender) { // run as a hook
             // attach current component render listener before Effect, to catch changes between render and painting
-            // todo: research is it possible "React render component/hook, but do not raise Effect" because of something
             if (descriptor.listeners.indexOf(runOnChanges) < 0) {
                 descriptor.listeners.push(runOnChanges);
             }
@@ -267,9 +340,6 @@ function runAsModule() {
 
         // https://reactjs.org/docs/hooks-reference.html#uselayouteffect
         // Updates scheduled inside useLayoutEffect will be flushed synchronously
-
-        // todo: research case 'data in state A -> (x) ->  data to state B -> invoke render -> data to state A -> (x)'
-        //_React.useLayoutEffect(function() { });
 
         var tEnd = performance.now();
         timeUsed += tEnd - tStart;
