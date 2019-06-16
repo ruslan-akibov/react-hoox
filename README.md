@@ -12,6 +12,7 @@ npm install --save react-hoox
 ```
 
 React **16.8.0** or later should be available as `react` package or provided as `React` variable.
+**IE11** or better browser is required to run.
 
 
 ## Preparation
@@ -31,7 +32,8 @@ Add the following in "plugins" of your `.babelrc` or define as `babel` plugin an
 
 ## Usage
 
-Using `react-hoox` means calling only one function. It returns provided *Object* (for destructuring purposes). You can name it any way you want, for example, `use` or `use$` seem to be quite appropriate.
+Using `react-hoox` means calling only one identity `a => a` function. It returns provided *Object* (for destructuring purposes) without any changes.
+> You can name it any way you want, for example, `use` or `use$` seem to be quite appropriate.
 
 ```js
 import use from 'react-hoox';
@@ -44,7 +46,7 @@ function AnyComponent() {
 }
 ```
 
-That's it. Now you can asynchronously mutate `anyObject` or its deep parts and `AnyComponent` will be updated every time `anyObject` **really** changes (from human point of view, `[1,2,3] === [1,2,3]`)
+That's it. Now `AnyComponent` will be updated every time `anyObject` or its parts **really** changes (from human point of view, `[1,2,3] === [1,2,3]`)
 
 A simple way to *connect* class-components or something else:
 
@@ -84,11 +86,11 @@ Do you agree that a computer can do a significant painful part of our work? And 
 
 If so, then `react-hoox` is for you! It will help you write cleaner and more stable code, here are the main advantages of using:
 
-* No boilerplate. Just small *markers* in the code that mean "this code depends on this data" (*declarative* interpretation)
++ **No boilerplate**. Just small *markers* in the code that mean "this code depends on this data" (*declarative* interpretation)
 
-* No wrappers/dispatchers/managers and so on. Everything you need is written locally in one place like "start observing this and update me on changes" (*imperative* interpretation)
++ **No wrappers/dispatchers/managers** and so on. Everything you need is written locally in one place like "start observing this and update me on changes" (*imperative* interpretation)
 
-* No immutability, `react-hoox` will take care of that. You will receive a stream of *new* data states (*reactive* interpretation)
++ **No immutability**, `react-hoox` will take care of that. You will receive a stream of *new* data states (*reactive* interpretation)
 
 > Eventually, you will be able to replace `react-hoox` with another implementation of similar functionality (using `set`/`get`, or `Proxy`, or `Object.observe`, or whatever, with or without limitations) and *keep your code unchanged* - everything you need will be done by one function.
 
