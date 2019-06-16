@@ -46,7 +46,7 @@ function AnyComponent() {
 }
 ```
 
-That's it. Now `AnyComponent` will be updated every time `anyObject` or its parts **really** changes (from human point of view, `[1,2,3] === [1,2,3]`)
+That's it. Now `AnyComponent` will be updated every time `anyObject` or its parts **really** changes (from human point of view, e.g. `[1,2,3] === [1,2,3]`)
 
 A simple way to *connect* class-components or something else:
 
@@ -104,7 +104,7 @@ It depends on the amount of (simultaneously) observable data and on the browser/
 The good news is that for typical applications and modern devices the calculations will most likely take *one-digit milliseconds* per second when another code works (1% or less) and several dozens Kb for caching.
 
 Huge *Objects* (hundreds of Kb) can be used as well, but native `.toString` with necessary minimum to observe changes should be defined in such cases for performance.
->  If you exceed the limit, `react-hoox` will not work in *microtask* mode, and updates may be delayed.
+>  If you exceed the limit, `react-hoox` will not be able to work in *microtask* mode, and updates may be delayed.
 
 Detailed explanation of how this works and why resources are consumed will be provided in the future. For now the source code is your best friend.
 Moreover, if you're thinking about using `react-hoox` in a serious production, you *should* definitely do it. 
