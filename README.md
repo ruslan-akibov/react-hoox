@@ -1,6 +1,6 @@
 # react-hoox
 
-A simple hook to observe any *Object* and update related *Component* when real change happens.
+A simple hook to observe any *Object*, including subtree, and update related *Component* when real change happens.
 
 [Sandbox Demo](https://codesandbox.io/s/b55w2)
 
@@ -31,7 +31,7 @@ Add the following in "plugins" of your `.babelrc` or define as `babel` plugin an
 
 ## Usage
 
-Using hoox means calling only one function. It returns provided *Object* (for destructuring purposes). You can name it any way you want, for example, `use` or `use$` seem to be quite appropriate.
+Using `react-hoox` means calling only one function. It returns provided *Object* (for destructuring purposes). You can name it any way you want, for example, `use` or `use$` seem to be quite appropriate.
 
 ```js
 import use from 'react-hoox';
@@ -44,9 +44,9 @@ function AnyComponent() {
 }
 ```
 
-That's it. Now you can asynchronously mutate 'anyObject' and 'AnyComponent' will be updated every time 'anyObject' **really** changes (from human or `JSON.stringify` point of view)
+That's it. Now you can asynchronously mutate `anyObject` or its deep parts and `AnyComponent` will be updated every time `anyObject` **really** changes (from human point of view, `[1,2,3] === [1,2,3]`)
 
-A simple way to *connect* class-components (if you like such things):
+A simple way to *connect* class-components or something else:
 
 ```js
 function MyConnectedComponent(props) {
@@ -82,9 +82,7 @@ Do you agree that you should think and a computer should calculate?
 
 Do you agree that a computer can do a significant painful part of our work? And do it much better and without issues?
 
-If so, then `react-hoox` is for you! It will help you write cleaner and more stable code.
-
-Advantages of using `react-hoox`:
+If so, then `react-hoox` is for you! It will help you write cleaner and more stable code, here are the main advantages of using:
 
 * No boilerplate. Just small *markers* in the code that mean "this code depends on this data" (*declarative* interpretation)
 
@@ -92,17 +90,19 @@ Advantages of using `react-hoox`:
 
 * No immutability, `react-hoox` will take care of that. You will receive a stream of *new* data states (*reactive* interpretation)
 
-Eventually, you will be able to replace `react-hoox` with another implementation of similar functionality (using `set`/`get`, or `Proxy`, or `Object.observe`, or whatever, with or without limitations) and keep your code unchanged.
-Everything you need will be done by one function.
+> Eventually, you will be able to replace `react-hoox` with another implementation of similar functionality (using `set`/`get`, or `Proxy`, or `Object.observe`, or whatever, with or without limitations) and *keep your code unchanged* - everything you need will be done by one function.
 
 
 ## Disclaimer
 
-`react-hoox` will affect overall application performance since it uses some CPU and RAM, you will see real-time usage notifications in the console.
+`react-hoox` may have a slight effect on application performance since it uses some CPU and RAM.
+It depends on the amount of (simultaneously) observable data and on the browser/device, but never exceeds the fixed limit.
+> See real-time notifications in the console for your situation.
 
-The bad news is that it depends on the amount of (simultaneously) observable data and on the browser/device.
+The good news is that for typical applications and modern devices the calculations will most likely take *one-digit milliseconds* per second when another code works (1% or less) and several dozens Kb for caching.
 
-The good news is that for typical applications and modern devices the calculations will most likely take *one-digit milliseconds* per second when another code works (1% or less) and several dozens Kb for caching. See detailed notifications in the console for your situation.
+Huge *Objects* (hundreds of Kb) can be used as well, but native `.toString` with necessary minimum to observe changes should be defined in such cases for performance.
+>  If you exceed the limit, `react-hoox` will not work in *microtask* mode, and updates may be delayed.
 
 Detailed explanation of how this works and why resources are consumed will be provided in the future. For now the source code is your best friend.
 Moreover, if you're thinking about using `react-hoox` in a serious production, you *should* definitely do it. 
