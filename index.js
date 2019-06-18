@@ -16,6 +16,7 @@ var TRIGGER_NAME = '__r_a_27_';
 // so it is better to use for calculations not more than 40ms/second
 var TIME_LIMIT_FREE = 32;   // ~2 frames on 60Hz
 var TIME_LIMIT = 64;
+var RESCUE_INPUTS = false;
 
 // care about user - the same naming 'react-hoox' for plugin and for import
 exports.default = typeof window !== 'undefined' ? runAsModule() : runAsPlugin();
@@ -202,7 +203,7 @@ function runAsModule() {
             var descriptor = sources.get(o);
 
             // calculating new hash-code
-            var hashCode = stringify(o);
+            var hashCode = stringify(descriptor.readable ? o() : o);
 
             if (hashCode !== descriptor.hashCode) {
                 Array.prototype.push.apply(listenersToRender, descriptor.listeners);
@@ -221,12 +222,66 @@ function runAsModule() {
         var tEnd = performance.now();
         timeUsed += tEnd - tStart;
 
+
+        // check and restore <input> cursor: before update
+        var focusedValueBefore = null;
+        var focusedValueAfter = null;
+        if (lastInputState && document.activeElement) {
+            focusedValueBefore = document.activeElement.value;
+        }
+
         // this API will not be available soon
         if (unstable_batchedUpdates) {
             unstable_batchedUpdates(updateListeners);
         } else {
             updateListeners();
         }
+
+        // check and restore <input> cursor: after update
+        if (lastInputState && document.activeElement) {
+            focusedValueAfter = document.activeElement.value;
+
+            if (
+                focusedValueBefore !== null &&
+                focusedValueAfter !== null &&
+                focusedValueAfter !== focusedValueBefore &&
+                focusedValueAfter === lastInputState.value
+            ) {
+                document.activeElement.setSelectionRange(
+                    lastInputState.selectionStart,
+                    lastInputState.selectionEnd
+                );
+
+                lastInputState = null;
+            }
+        }
+    }
+
+    var lastInputState = null;
+    var inputSupportedSelection = ['text', 'search', 'URL', 'tel', 'password'];
+
+    function inputCapture() {
+        var focused = document.activeElement;
+
+        if (
+            focused &&
+            (
+                (focused.tagName === 'INPUT' && inputSupportedSelection.indexOf(focused.type) >= 0) ||
+                (focused.tagName === 'TEXTAREA')
+            )
+        ) {
+            lastInputState = {
+                value: focused.value,
+                selectionStart: focused.selectionStart,
+                selectionEnd: focused.selectionEnd
+            };
+        } else {
+            lastInputState = null;
+        }
+    }
+
+    if (RESCUE_INPUTS) {
+        document.body.addEventListener('input', inputCapture, true);
     }
 
 
@@ -272,14 +327,26 @@ function runAsModule() {
     return function(source, customCallback) {
         var tStart = performance.now();
 
+        if (!source) {
+            return source;
+        }
+
         var invokeRender = null;
         try {
             // using second part of state-hook to force component re-rendering
             invokeRender = _React.useState({})[1];
         } catch (error) {}
 
-        var runOnChanges = invokeRender || (customCallback ? function() { customCallback(source) } : null);
         var returnValue = source;
+        var readable = !!(source.constructor && source.call && source.apply); // support Functions as data sources
+        if (readable) {
+            returnValue = source();
+        }
+
+        var runOnChanges = invokeRender || (
+            customCallback ? function() { customCallback(readable ? source() : source) } : null
+        );
+
 
         if (!runOnChanges) { // not a hook, no callback - do nothing
             return returnValue;
@@ -295,7 +362,8 @@ function runAsModule() {
         var descriptor = sources.get(source);
         if (!descriptor) {
             descriptor = {
-                hashCode: stringify(source), // calculating for new items firstly in render
+                hashCode: stringify(readable ? source() : source), // calculating for new items firstly in render
+                readable: readable,
                 listeners: []
             }
 
