@@ -76,7 +76,11 @@ let value = '';
 function MyInput() {
     use(() => value);
 
-    return <input type="text" value={value} onChange={e => value = e.target.value} />
+    return <input
+        type="text"
+        value={value}
+        onChange={e => value = e.target.value}
+    />
 }
 ```
 
