@@ -67,7 +67,7 @@ function MyConnectedComponent(props) {
 }
 ```
 
-Alternatively, if you pass a function, its result will be observed and returned.
+Alternatively, if you pass *Function*, its result will be observed and returned.
 It could be useful in some cases, for example, to observe primitive:
 
 ```js
