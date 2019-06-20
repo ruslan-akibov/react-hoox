@@ -1,6 +1,6 @@
 {
   "name": "react-hoox",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A simple hook to observe any Object, including subtree, and update related Component when real change happens",
   "main": "index.js",
   "repository": {

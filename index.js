@@ -16,7 +16,7 @@ var TRIGGER_NAME = '__r_a_27_';
 // so it is better to use for calculations not more than 40ms/second
 var TIME_LIMIT_FREE = 32;   // ~2 frames on 60Hz
 var TIME_LIMIT = 64;
-var RESCUE_INPUTS = false;
+var RESCUE_INPUTS = true;
 
 // care about user - the same naming 'react-hoox' for plugin and for import
 exports.default = typeof window !== 'undefined' ? runAsModule() : runAsPlugin();
@@ -223,10 +223,15 @@ function runAsModule() {
         timeUsed += tEnd - tStart;
 
 
+        function isInputCaptured() {
+            var focused = document.activeElement;
+            return !!(lastInputState && focused && lastInputState.code === (focused.tagName + focused.type));
+        }
+
         // check and restore <input> cursor: before update
         var focusedValueBefore = null;
         var focusedValueAfter = null;
-        if (lastInputState && document.activeElement) {
+        if (isInputCaptured()) {
             focusedValueBefore = document.activeElement.value;
         }
 
@@ -238,49 +243,56 @@ function runAsModule() {
         }
 
         // check and restore <input> cursor: after update
-        if (lastInputState && document.activeElement) {
+        if (isInputCaptured()) {
             focusedValueAfter = document.activeElement.value;
 
+            // "was updated in render to the same value which we had in input"
+            // so, it's assumed "storing input values in model"
             if (
                 focusedValueBefore !== null &&
-                focusedValueAfter !== null &&
+                focusedValueAfter &&
                 focusedValueAfter !== focusedValueBefore &&
                 focusedValueAfter === lastInputState.value
             ) {
                 document.activeElement.setSelectionRange(
                     lastInputState.selectionStart,
-                    lastInputState.selectionEnd
+                    lastInputState.selectionEnd,
+                    lastInputState.selectionDirection
                 );
-
-                lastInputState = null;
             }
         }
+
+        // only one attempt. on second update it may be dangerous
+        lastInputState = null;
     }
 
     var lastInputState = null;
-    var inputSupportedSelection = ['text', 'search', 'URL', 'tel', 'password'];
-
-    function inputCapture() {
-        var focused = document.activeElement;
-
-        if (
-            focused &&
-            (
-                (focused.tagName === 'INPUT' && inputSupportedSelection.indexOf(focused.type) >= 0) ||
-                (focused.tagName === 'TEXTAREA')
-            )
-        ) {
-            lastInputState = {
-                value: focused.value,
-                selectionStart: focused.selectionStart,
-                selectionEnd: focused.selectionEnd
-            };
-        } else {
-            lastInputState = null;
-        }
-    }
-
     if (RESCUE_INPUTS) {
+        var inputSupportedSelection = ['text', 'search', 'url', 'tel', 'password'];
+
+        function inputCapture(e) {
+            var focused = document.activeElement;
+
+            if (
+                focused &&
+                (
+                    (focused.tagName === 'INPUT' && inputSupportedSelection.indexOf(focused.type) >= 0) ||
+                    (focused.tagName === 'TEXTAREA')
+                )
+            ) {
+                lastInputState = {
+                    value: focused.value,
+                    code: focused.tagName + focused.type,
+
+                    selectionStart: focused.selectionStart,
+                    selectionEnd: focused.selectionEnd,
+                    selectionDirection: focused.selectionDirection
+                };
+            } else {
+                lastInputState = null;
+            }
+        }
+
         document.body.addEventListener('input', inputCapture, true);
     }
 

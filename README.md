@@ -67,6 +67,19 @@ function MyConnectedComponent(props) {
 }
 ```
 
+Alternatively, if you pass a function, its result will be observed and returned.
+It could be useful in some cases, for example, to observe primitive:
+
+```js
+let value = '';
+
+function MyInput() {
+    use(() => value);
+
+    return <input type="text" value={value} onChange={e => value = e.target.value} />
+}
+```
+
 You can also introduce custom patterns based on `react-hoox` using higher-order functions/components or custom changes handler:
 
 ```js
