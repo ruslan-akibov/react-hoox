@@ -219,21 +219,16 @@ function runAsModule() {
             listenersToRender.forEach(function(f) { f({}) });
         }
 
+
+        // we will check 'focused' input's value after update
+        var focusedValueBeforeUpdate = null;
+        if (isInputCaptured()) {
+            focusedValueBeforeUpdate = document.activeElement.value;
+        }
+
         var tEnd = performance.now();
         timeUsed += tEnd - tStart;
 
-
-        function isInputCaptured() {
-            var focused = document.activeElement;
-            return !!(lastInputState && focused && lastInputState.code === (focused.tagName + focused.type));
-        }
-
-        // check and restore <input> cursor: before update
-        var focusedValueBefore = null;
-        var focusedValueAfter = null;
-        if (isInputCaptured()) {
-            focusedValueBefore = document.activeElement.value;
-        }
 
         // this API will not be available soon
         if (unstable_batchedUpdates) {
@@ -242,7 +237,17 @@ function runAsModule() {
             updateListeners();
         }
 
-        // check and restore <input> cursor: after update
+        _restoreCursor(focusedValueBeforeUpdate);
+    }
+
+    var lastInputState = null;
+    function isInputCaptured() {
+        var focused = document.activeElement;
+        return !!(lastInputState && focused && lastInputState.code === (focused.tagName + focused.type));
+    }
+
+    function _restoreCursor(focusedValueBefore) {
+        // check and restore <input> cursor
         if (isInputCaptured()) {
             focusedValueAfter = document.activeElement.value;
 
@@ -266,7 +271,7 @@ function runAsModule() {
         lastInputState = null;
     }
 
-    var lastInputState = null;
+
     if (RESCUE_INPUTS) {
         var inputSupportedSelection = ['text', 'search', 'url', 'tel', 'password'];
 
@@ -399,7 +404,7 @@ function runAsModule() {
                         sources.delete(source);
                         sourceObjects = sourceObjects.filter(function(o) { return o !==  source })
                     }
-                }, 500);
+                }, 50);
             };
         }
 
