@@ -67,7 +67,7 @@ function MyConnectedComponent(props) {
 }
 ```
 
-Alternatively, if you pass *Function*, its result will be observed and returned.
+Alternatively, if you pass constant *Function*, its result will be observed and returned `(b => a) => a`.
 It could be useful in some cases, for example, to observe primitive:
 
 ```js
@@ -93,6 +93,8 @@ import use$ from 'react-hoox';
 // callback will be executed when 'anyObject' changes
 const unsubscribe = use$(anyObject, obj => { ... });
 ```
+
+`react-hoox` will perform updates as fast as it possible, but keep in mind that it works **asynchronously** by nature.
 
 
 ## Why so serious?
