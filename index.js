@@ -82,11 +82,12 @@ function runAsPlugin() {
 
         return {
             visitor: {
-                Program: function(path) {
+                Program: function(path, state) {
                     var filename = this.file.opts.filename;
+                    // skip node_modules by default
+                    var exclude = new RegExp((state.opts && state.opts.exclude) || 'node_modules');
 
-                    // skip all modules
-                    if (filename.indexOf('node_modules') >= 0) {
+                    if (exclude.test(filename)) {
                         skippingFiles[filename] = true;
                         return;
                     }

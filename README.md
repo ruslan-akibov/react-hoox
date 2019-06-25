@@ -1,4 +1,4 @@
-# react-hoox
+# HʘʘX
 
 A simple hook to observe any *Object*, including subtree, and update related *Component* when real change happens.
 
